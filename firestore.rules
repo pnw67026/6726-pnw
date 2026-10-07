@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Blueprint for Transactions
+    function isValidTransaction(data, userId) {
+      return data.keys().hasAll(['userId', 'title', 'amount', 'type', 'category', 'date']) &&
+        data.keys().hasOnly(['userId', 'title', 'amount', 'type', 'category', 'date', 'note', 'paymentMethod', 'createdAt', 'updatedAt']) &&
+        data.userId == userId &&
+        data.userId == request.auth.uid &&
+        data.title is string &&
+        data.title.size() > 0 &&
+        data.title.size() <= 100 &&
+        data.amount is number &&
+        data.amount > 0 &&
+        (data.type == 'income' || data.type == 'expense') &&
+        data.category is string &&
+        data.category.size() > 0 &&
+        data.category.size() <= 50 &&
+        data.date is string &&
+        data.date.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        (!('note' in data) || (data.note is string && data.note.size() <= 500)) &&
+        (!('paymentMethod' in data) || (data.paymentMethod is string && data.paymentMethod.size() <= 50));
+    }
+
+    // Validation Blueprint for Monthly Budget
+    function isValidBudget(data, userId) {
+      return data.keys().hasAll(['userId', 'monthYear', 'totalBudget']) &&
+        data.keys().hasOnly(['userId', 'monthYear', 'totalBudget', 'updatedAt']) &&
+        data.userId == userId &&
+        data.userId == request.auth.uid &&
+        data.monthYear is string &&
+        data.monthYear.matches('^\\d{4}-\\d{2}$') &&
+        data.totalBudget is number &&
+        data.totalBudget >= 0;
+    }
+
+    // Subcollections scoped to users
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+
+      match /transactions/{transactionId} {
+        allow get: if isOwner(userId) && isValidId(transactionId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(transactionId) &&
+                         isValidTransaction(incoming(), userId);
+        allow update: if isOwner(userId) &&
+                         isValidId(transactionId) &&
+                         isValidTransaction(incoming(), userId) &&
+                         incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(transactionId);
+      }
+
+      match /budgets/{monthYear} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create, update: if isOwner(userId) &&
+                                 isValidBudget(incoming(), userId);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "PNW26 Expense Tracker",
+  "description": "เว็บแอปพลิเคชันบันทึกและจัดการรายรับรายจ่าย สรุปผลรายเดือน พร้อมกราฟวิเคราะห์ข้อมูลการเงินแบบเรียลไทม์ เชื่อมต่อ Firebase Firestore",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

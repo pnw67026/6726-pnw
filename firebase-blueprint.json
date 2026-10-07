@@ -1,0 +1,89 @@
+{
+  "entities": {
+    "Transaction": {
+      "title": "Transaction",
+      "description": "An income or expense transaction entry",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns the transaction"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Short description of transaction"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Monetary value of the transaction"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["income", "expense"],
+          "description": "Type: income or expense"
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Category name"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Date formatted as YYYY-MM-DD"
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Optional notes"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Payment channel: cash, promptpay, credit, transfer"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["userId", "title", "amount", "type", "category", "date"]
+    },
+    "MonthlyBudget": {
+      "title": "MonthlyBudget",
+      "description": "Monthly budget limit set by user",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the owner"
+        },
+        "monthYear": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}$",
+          "description": "Target month in YYYY-MM format"
+        },
+        "totalBudget": {
+          "type": "number",
+          "description": "Total monthly spending budget limit"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated timestamp"
+        }
+      },
+      "required": ["userId", "monthYear", "totalBudget"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Subcollection of personal transactions isolated per user"
+    },
+    "/users/{userId}/budgets/{monthYear}": {
+      "schema": "MonthlyBudget",
+      "description": "Subcollection of monthly budget limits per user"
+    }
+  }
+}
